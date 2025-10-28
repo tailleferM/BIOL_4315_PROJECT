@@ -27,18 +27,22 @@ Mean coverage:	30
 
 # Annotation
 # going off this doc https://funannotate.readthedocs.io/en/latest/tutorials.html
-#masking
+
+#Funannotate
+
+#masking (need to do before annotation)
 docker run --rm -v "$PWD":/data -w /data --platform linux/amd64 nextgenusfs/funannotate funannotate mask -i trimmed_assembly.fasta -o tr_masked_assembly.fasta  
 
-  # funannotate predict -i softMasked.fa -o fun \
-    #--species "Pseudogenus specicus" --strain JMP12345 \
-    #--busco_seed_species botrytis_cinerea --cpus 12
+#annotation -> prediction with funannotate
+docker run --rm -v "$PWD":/data -w /data --platform linux/amd64 nextgenusfs/funannotate funannotate predict -i tr_masked_assembly.fasta -o /data/output -s 'Wickerhamomyces anomalus'
 
-#docker
+
+#busco
 docker run --rm \
 -v "$PWD":/data \
 -w /data \
 ezlabgva/busco:v6.0.0_cv1 \
 busco -i assembly.fasta -o busco_output -l saccharomycetaceae_odb12 -m genome -c 8
 
+#
 
