@@ -18,6 +18,7 @@
 # Assembly
   # flye --nano-raw file.name --out-dir /flye_output --threads 8 --genome-size 14m
 
+#assembly stats
 Total length:	13858957
 Fragments:	166
 Fragments N50:	299060
@@ -29,7 +30,7 @@ Mean coverage:	30
 # going off this doc https://funannotate.readthedocs.io/en/latest/tutorials.html
 
 #Funannotate
-
+#make sure you're in the right directory!!!
 #step 1 masking (need to do before annotation)
 docker run --rm -v "$PWD":/data -w /data --platform linux/amd64 nextgenusfs/funannotate funannotate mask -i trimmed_assembly.fasta -o tr_masked_assembly.fasta  
 
