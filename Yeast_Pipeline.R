@@ -47,11 +47,20 @@ align the reference rna seqs against my assembly -> use for funannotate
 
 
 #reading my funannotate gff file output 
-gffFile <- readLines('/Users/mtaillefer00/Documents/BIOL_4315_PROJECT/data/funannotate_stuff/output/predict_results/Wickerhamomyces_anomalus.gff3')
-
 library(stringr)
-products <- str_subset(gffFile, 'product=')
+gffFile <- readLines('/Users/mtaillefer00/Documents/BIOL_4315_PROJECT/data/funannotate_stuff/output_attempt_1/annotate_results/Wickerhamomyces_anomalus.gff3')
+product_lines <- str_subset(gffFile, 'product=')
+products <- str_match(product_lines, "product=([^;]+);")[,2]
+hypo_count <- sum(str_detect(products, regex("^hypothetical", ignore_case = TRUE)))
+filtered_products <- products[!str_detect(products, regex("^hypothetical", ignore_case = TRUE))]
+summary_line <- paste(hypo_count, "hypothetical proteins")
+final_list <- c(summary_line, filtered_products)
 
+make list of genes involved in the pathways
+ -> look at kegg or cog for pathways interesting for me 
+ -> parse my list of products for these genes 
+ 
+ 
 #busco
 docker run --rm \
 -v "$PWD":/data \
@@ -61,6 +70,8 @@ busco -i assembly.fasta -o busco_output -l saccharomycetaceae_odb12 -m genome -c
 
 library(blastinR)
 make_blast_db(infile = '/Users/mtaillefer00/Documents/BIOL_4315_PROJECT/data/funannotate_stuff/output/predict_results/Wickerhamomyces_anomalus.proteins.fa', dbtype = 'prot')
+build blast database of the genes im interested in
+input metadata table assoc with genes in database
 
 
 
