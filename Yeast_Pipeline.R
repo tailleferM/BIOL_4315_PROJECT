@@ -14,6 +14,8 @@
 
 #QC 
   # sequali --outdir sequali_reports/ /path to the file
+  # filtlong 
+  #
   
 # Assembly
   # flye --nano-raw file.name --out-dir /flye_output --threads 8 --genome-size 14m
@@ -25,6 +27,8 @@ Fragments N50:	299060
 Largest frg:	973058
 Scaffolds:	0
 Mean coverage:	30
+
+#in discussion highlight lenght of genome vs expected length
 
 # Annotation
 # going off this doc https://funannotate.readthedocs.io/en/latest/tutorials.html
