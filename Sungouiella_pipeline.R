@@ -47,3 +47,17 @@ quast.py /data/flye/assembly.fasta \
 flye scaffolding
 raccoon scaffolding <- de novo scafffolding?? 
 medaka <- polish genome
+
+#interpro
+docker run --rm \
+-v $PWD/interproscan-5.76-107.0/data:/opt/interproscan/data \
+-v $PWD/input:/input \
+-v $PWD/temp:/temp \
+-v $PWD/output:/output \
+--platform linux/amd64 \
+interpro/interproscan:5.76-107.0 \
+--input /input/Sungouiella_akabanensis.proteins.fa \
+--output-dir /output \
+--tempdir /temp \
+--cpu 8
+
