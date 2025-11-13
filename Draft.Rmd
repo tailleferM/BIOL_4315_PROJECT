@@ -1,0 +1,148 @@
+---
+title: "Project Draft"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+date: "2025-11-13"
+bibliography: citations.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Abstract
+Yeasts are a diverse group of fungi with many applications in a wide variety of industries. The applications of a given species are determined by what genes and pathways they carry in their genomes. Modern sequencing technology and genomic techniques allows us to peer into the genome of a species and prospect for potential uses. The cost of sequencing and computing has decreased dramatically in recent years, allowing the expansion of genomics research into the coursework of college students at even the undergraduate level. In this project we present the assembled and annotated genomes of two wild yeast isolates, Wickerhamomyces anomalus and Sungouiella akabanensis, along with a complete pipeline for yeast genome annotation from initial read quality control to analysis of annotation results. One of these isolates, S. akabanensis, is a previously ungenotyped species, and therefore this assembly could serve as the basis for further research. We examined the genomes of these yeasts for traits indicating possible bioremediation applications, and found X. This indicates that X is promising for X and X warrants additional investigation.
+
+Keywords: Genomics, Wickerhamomyces anomalus, Sungouiella akabanensis, yeast, bioremediation, xenobiotics 
+
+Background
+
+Genomics is a field of biology that seeks to study and explore the entire genetic material of an organism. A field with applications as diverse as ecological surveys and industrial applications, it forms the foundation of much of current biological research. It can allow us to answer the question of what microbes are living in a given environment, without the drawbacks of needing to culture a sample. Genomics provides the methods to classify organisms to a greater precision than was ever possible with simple morphological or even gene based trees. It gives us the tools to explore understudied organisms and examine their metabolisms and even discover novel uses for them. One such domain of underexplored organisms is fungi [@cunningham_fungi_2024].
+
+While the questions that genomics can answer are varied, the general workflow is conserved. DNA is extracted from an organism and processed. It is fed to a sequencing machine to generate reads, contiguous subsequences of the greater genome. Sequencing platforms fall into two main strategies; short read and long read sequencing. Today Illumina (short read) competes with Oxford Nanopore Technologies and Pacific Biosciences (long read) for their place in the sequencing market. Once sequencing is complete, the DNA from different samples must be separated, a process known as demultiplexing. Next, quality control must be performed. Typical metrics by which the run is evaluated include the length distribution of the reads and quality scores. Unwanted reads are rejected, and for short reads often the lower quality back end of the read is trimmed. Since the chemistry of long read sequencing is different, low quality bases are not skewed towards the back end of reads and trimming is not typically performed. After the quality of the data is deemed acceptable, the reads are arranged by a program known as an assembler into a genome assembly. Assemblers work either with the use of a reference genome, or ‘de novo’, building the genome from scratch. The assembly must then be evaluated. Common metrics of evaluation include the N50 score (the length of the shortest contig among the longest contigs accounting for 50% of the data), the length of the assembly compared to its expected size, the contiguity and the completeness of the assembly [@BUSCO]. 
+
+To gain meaningful insight into the genome, the assembly must be annotated. Annotation is the assignment of function to regions of the genome. The locations of genes are predicted based on their sequence and their functions are predicted by aligning them against large datasets of known coding sequences. Though this allows us to predict what proteins an organism produces, further testing must be performed to confirm the results. This testing often takes the form of transcriptomics, the study of the summation of mRNA transcripts in an organism. By aligning the transcriptome against the genome, we can determine which genes are being transcribed and increase our confidence in the annotation.
+
+Yeasts are a group of primarily single-celled fungi that have a long history with humanity. The metabolic abilities of yeast have been exploited by humans for the leavening of bread and fermentation of alcohol for thousands of years [@tullio_yeast_2022]. In recent years other applications have been explored such as biofuel and protein production, and in bioremediation. Bioremediation is the use of microorganisms to clean and detoxify waste products. Yeasts are good candidates for bioremediation applications as they have diverse metabolisms and are able to metabolize a wide variety of natural and xenobiotic compounds [@mohiuddin_bioremediation_2024]. Notable fungal enzymes involved in these processes include laccases, peroxidases and cytochromes P450 [@khan_recent_2023]. Yeasts also exhibit biosorption abilities and are capable of absorbing and concentrating heavy metals. Notable genes involved in the uptake of heavy metals include Fe/Cu reductases, Fe permeases, cytochromes, Cu/Zn superoxide dismutases, and fatty acid-binding proteins [@xiao_adsorption_2025]. 
+
+In this project we will assemble and annotate the genomes of two wild yeast isolates, Wickerhamomyces anomalus and Sungouiella akabanensis. We will check whether they exhibit genes suitable for bioremediation applications, such as waste management and pollutant detoxification. We will examine their genomes for genes involved in xenobiotic metabolism and the uptake of heavy metals. Should these genes be present, these yeasts would be suitable candidates for further study to quantify their bioremediation capabilities. 
+
+Methods
+
+Initial QC
+Genomic DNA samples from wild isolates of W. anomalus and S. akabanensis were sequenced with a Nanopore X, resulting in 402 mb and 490 mb of long read data respectively. Initial inspection of the data was performed using Sequali in a conda environment [@vorderman_sequali_2024]. After inspection, the data was filtered based on length using the preprocessedReads function from the bioconductor package QuasR, with the argument ‘minlength = 100’ for W. hamomyces and ‘minlength = 140’ for S. akabanensis [@gaidatzis_quasr_2015]. Minimum length was selected based on the length distributions observed with Sequali. 
+
+Assembly
+The filtered reads were then assembled using Flye in a conda environment [@kolmogorov_assembly_2019]. The argument ‘--nano-hq’ for high quality reads was used, as well as the argument ‘--genome-size 14m’. 14 megabases was selected as this is the length of the reference genome for W. anomalus ([refseq](https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_001661255.1/)). As no reference genome for S. akabanensis exists, other species of the genus were consulted and since a range of 10 to 16 megabases was observed so the same value of 14 was chosen.
+
+Evaluation
+Initial evaluation of the assembled genomes was performed using BUSCO through docker ([image](https://hub.docker.com/r/ezlabgva/busco)) with the arguments ‘-l saccharomycetaceae_odb12 -m genome -c 8’. The saccharomycetaceae lineage was chosen as this was the closest relative of the yeasts found in the busco dataset. The genome mode was selected as the data is genomic, and 8 cores were specified as per the computer used. Further evaluation of the W. anomalus assembly was performed using QUAST through Docker with the arguments ‘ --fungus -r GCF_001661255.1_Wican1_genomic.fna  -g GCF_001661255.1_Wican1_genomic.gff’. The reference sequences and annotation file were obtained through NCBI RefSeq from the assembly ‘Wican1’ ([refseq](https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_001661255.1/)). No QUAST was performed on the S. akabanensis assembly as no reference genome exists. 
+
+Gene prediction and annotation
+Gene prediction and annotation was performed with funannotate through docker ([image](https://hub.docker.com/r/nextgenusfs/funannotate)), the eggNOG-mapper online tool ([link](http://eggnog-mapper.embl.de/)), and interproscan through docker ([image](https://hub.docker.com/r/interpro/interproscan)) [@]. First the assemblies were repeat masked using funannotate mask with default arguments. Next, genes were predicted using funannotate predict with default arguments [@palmer_funannotate_2020]. The output predicted proteins fasta file was then submitted to eggNOG-mapper for annotation [@cantalapiedra_eggnog-mapper_2021;@huerta-cepas_eggnog_2019]. The same predicted proteins fasta file was also used as input for interproscan with default arguments [@interpro;@interproscan]. EXPAND ON INTERPRO PROCESS - downloading dataset, setting up etc. Funannotate annotate was run with default arguments. 
+
+Analysis
+I’m still working on the analysis of the annotation data. Annotation tables from eggnogdb mapper were read into R using the read_excel function from the package readxl. Using the R packages Go.db and AnnotationDbi, gene ontology numbers were mapped to their associated terms and ontology categories for ease of analysis [@ashburner_gene_2000;@the_gene_ontology_consortium_gene_2023]. A map of COG letters to their associated category was constructed and used to transform the COG_category column of the dataset [@galperin_cog_2024]. 
+
+Results / Discussion
+Note that only code is shown for the Wickerhamomyces anomalus run, but the same workflow was followed for both strains. Results of both strains are discussed.
+
+Initial QC - Sequali
+```{bash sequali, eval=FALSE}
+conda activate sequali-env
+sequali --outdir sequali_reports/ wickerhamomycesAnomalus.fastq
+```
+#to do -> embed some sequali output graphs
+
+Filtering - QuasR
+```{r QuasR, eval=FALSE}
+library(QuasR)
+outfiles <- '~/above100bp.fastq'
+preprocessReads('~/wickerhamomycesAnomalus.fastq', outfiles, minLength = 100)
+```
+
+Assembly - Flye
+```{bash flye, eval=FALSE}
+conda activate fly-env
+flye --nano-hq above100bp.fastq --out-dir flye/ --threads 8 --genome-size 14m
+```
+
+PUT THIS INTO TABLES 
+S. akabanensis
+Total length:	1206445
+Fragments:	    90
+Fragments N50:	363453
+Largest frg:	  815303
+Scaffolds:	    0
+Mean coverage:	18
+
+W. anomalus
+Total length:	13205329
+Fragments:	2025
+Fragments N50:	9214
+Largest frg:	53218
+Scaffolds:	0
+Mean coverage:	13
+
+ADD DISCUSSION OF RESULTS
+
+Assembly evaluation - BUSCO
+```{bash BUSCO, eval=FALSE}
+docker run --rm \
+-v "$PWD":/data \
+-w /data \
+ezlabgva/busco:v6.0.0_cv1 \
+busco -i flye/assembly.fasta -o busco_output -l saccharomycetaceae_odb12 -m genome -c 8
+```
+Complete BUSCOs: 43%
+fill in rest of results later, don't have busco output with me
+ADD DISCUSSION OF THIS - why is it low? <- wrong species, low contiguity etc
+
+Assembly evaluation - QUAST
+```{bash QUAST, eval=FALSE}
+docker run --rm -v "$(pwd)":/data -w /data quay.io/biocontainers/quast:5.3.0--py313pl5321h5ca1c30_2 \
+quast.py /data/flye/assembly.fasta \
+--fungus \
+-r /data/referenceData/GCA_900106115.1_CBS_141442_assembly_genomic.fna \
+-g /data/referenceData/GCA_900106115.1_CBS_141442_assembly_genomic.gff \
+-o quast_output
+```
+don't have quast ouput with me
+
+Gene Prediction - Funannotate predict
+```{bash funannotate mask+predict, eval=FALSE}
+docker run --rm -v "$PWD":/data -w /data --platform linux/amd64 nextgenusfs/funannotate funannotate mask -i flye/assembly.fasta -o masked_assembly.fasta  
+
+docker run --rm -v "$PWD":/data -w /data --platform linux/amd64 nextgenusfs/funannotate funannotate predict -i masked_assembly.fasta -o /data/output -s 'Wickerhamomyces anomalus'
+```
+
+Genome Annotation - eggNOG-mapper
+
+Note that eggNOG-mapper was run via the online tool. The following code is the job command line.
+```{bash eggnog, eval=FALSE}
+emapper.py --cpu 20 --mp_start_method forkserver --data_dir /dev/shm/ -o out --output_dir /emapper_web_jobs/emapper_jobs/user_data/MM_um3te_g6 --temp_dir /emapper_web_jobs/emapper_jobs/user_data/MM_um3te_g6 --override -m diamond --dmnd_ignore_warnings -i /emapper_web_jobs/emapper_jobs/user_data/MM_um3te_g6/queries.fasta --evalue 0.001 --score 60 --pident 40 --query_cover 20 --subject_cover 20 --itype proteins --tax_scope auto --target_orthologs all --go_evidence non-electronic --pfam_realign none --report_orthologs --decorate_gff yes --excel > /emapper_web_jobs/emapper_jobs/user_data/MM_um3te_g6/emapper.out 2> /emapper_web_jobs/emapper_jobs/user_data/MM_um3te_g6/emapper.err
+```
+
+Genome Annotation - InterProScan
+```{bash interpro, eval=FALSE}
+docker run --rm \
+-v $PWD/interproscan-5.76-107.0/data:/opt/interproscan/data \
+-v $PWD/input:/input \
+-v $PWD/temp:/temp \
+-v $PWD/output:/output \
+--platform linux/amd64 \
+interpro/interproscan:5.76-107.0 \
+--input /input/Wickerhamomyces_anomalus.proteins.fa \
+--output-dir /output \
+--tempdir /temp \
+--cpu 8
+```
+
+Genome Annotation - Funannotate annotate
+```{bash funannotate annotate, eval=FALSE}
+docker run --rm -v "$PWD":/data -w /data --platform linux/amd64 nextgenusfs/funannotate funannotate annotate -i /data/output -o /data/annotation_output
+```
+
+References

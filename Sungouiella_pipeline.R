@@ -46,7 +46,7 @@ quast.py /data/flye/assembly.fasta \
 
 flye scaffolding
 raccoon scaffolding <- de novo scafffolding?? 
-medaka <- polish genome
+  medaka <- polish genome
 
 #interpro
 docker run --rm \
