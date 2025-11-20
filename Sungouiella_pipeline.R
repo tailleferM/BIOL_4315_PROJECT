@@ -61,3 +61,46 @@ interpro/interproscan:5.76-107.0 \
 --tempdir /temp \
 --cpu 8
 
+#antismash 
+used online tool
+
+
+#funannotate with interpro and eggnog aaaand antismash
+
+docker run --rm -v "$PWD":/data -w /data --platform linux/amd64 nextgenusfs/funannotate funannotate annotate -i /data/output -o /data/annotation_output --iprscan /data/interpro/Sungouiella_akabanensis.proteins.fa.xml --force --antismash /data/antismash/Sungouiella_akabanensis.gbk --eggnog /data/eggnog/out.emapper.annotations.tsv --tmpdir /data/tmp
+
+
+sungouiella 
+
+# Read file into a character vector (each element = one line)
+x <- readLines("/Users/mtaillefer00/Documents/BIOL_4315_PROJECT/Sungouiella/output/annotate_results/Sungouiella_akabanensis.gbk")
+
+# Split at lines that contain exactly "//"
+blocks <- split(x, cumsum(x == "//"))
+
+# Remove the delimiter lines
+blocks <- lapply(blocks, function(b) b[b != "//"])
+
+# Remove empty blocks (in case file ends with //)
+blocks <- blocks[lengths(blocks) > 0]
+
+
+outdir <- "gbk_output"
+if (!dir.exists(outdir)) dir.create(outdir)
+
+# Extract contig ID from the LOCUS line
+extract_id <- function(block) {
+  locus_line <- block[grep("^LOCUS", block)][1]
+  # Extract token after LOCUS (e.g., "contig_1")
+  id <- sub("^LOCUS +([^ ]+).*", "\\1", locus_line)
+  return(id)
+}
+
+# Write each block to the output folder
+for (i in seq_along(blocks)) {
+  id <- extract_id(blocks[[i]])
+  outfile <- file.path(outdir, paste0("Sakabanensis_", id, ".gbk"))
+  writeLines(blocks[[i]], con = outfile)
+}
+
+

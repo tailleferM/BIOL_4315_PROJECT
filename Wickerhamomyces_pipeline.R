@@ -119,3 +119,8 @@ interpro/interproscan:5.76-107.0 \
 # - paper about xenobiotics enzymes and pathways in fungi 
 # - parse annotation for proteins mentioned in this paper
 # - look into references
+
+#funannotate with interpro and eggnog aaaand antismash
+
+docker run --rm -v "$PWD":/data -w /data --platform linux/amd64 nextgenusfs/funannotate funannotate annotate -i /data/output -o /data/annotation_output --iprscan /data/interpro/Wickerhamomyces_anomalus.proteins.fa.xml --force --antismash /data/antismash/Wickerhamomyces_anomalus.gbk --eggnog /data/eggnog/MM_jpced9_r.emapper.annotations.tsv --tmpdir /data/tmp
+
