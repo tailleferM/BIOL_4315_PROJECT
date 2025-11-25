@@ -93,5 +93,93 @@ ggplot(filtered, aes(y = COGs, fill = metal_flag)) +
    # legend.position = "top"
   )
 
+### ============================
+### BIOREMEDIATION GENE FILTERING PIPELINE
+### ============================
+
+### ---- 1. Keyword lists ----
+
+xeno_keywords <- c(
+  "laccase", "peroxidase", "oxidase", "monooxygenase",
+  "cytochrome P450", "CYP", "dehydrogenase", "oxidoreductase",
+  "glutathione", "GST", "xenobiotic"
+)
+
+metal_keywords <- c(
+  "ferric", "ferroxidase", "iron", "copper", "zinc",
+  "permease", "reductase", "SOD", "superoxide dismutase",
+  "metallothionein", "metal transporter", "ATP-binding cassette"
+)
+
+### ---- 2. Combine all annotation columns into one searchable string ----
+
+annotation_cols <- c("Description", "Preferred_name", "GOs", 
+                     "KEGG_ko", "KEGG_Pathway", "PFAMs", "COG_category")
+
+Sakabanensis$all_annotations <- apply(Sakabanensis[, annotation_cols], 1, paste, collapse = " ")
+
+### ---- 3. FILTERING ----
+
+df <- Sakabanensis
+
+## 3A. Xenobiotic metabolism genes
+xeno_hits <- df[grepl(paste(xeno_keywords, collapse="|"),
+                      df$all_annotations, ignore.case = TRUE), ]
+xeno_hits$bioremediation_category <- "xenobiotic_metabolism"
+
+## 3B. Heavy metal uptake genes
+metal_hits <- df[grepl(paste(metal_keywords, collapse="|"),
+                       df$all_annotations, ignore.case = TRUE), ]
+metal_hits$bioremediation_category <- "metal_uptake"
+
+## 3C. COG category = P (inorganic ion transport/metabolism)
+#cog_p <- df[df$COG_category == "P", ]
+#cog_p$bioremediation_category <- "COG_P_inorganic_ion_metabolism"
+
+
+### ---- 4. Combine and deduplicate ----
+
+combined_hits <- do.call(rbind, list(xeno_hits, metal_hits))
+
+# remove identical "query" entries
+combined_hits <- combined_hits[!duplicated(combined_hits$query), ]
+
+
+### ---- 5. Summary barplot ----
+
+library(ggplot2)
+
+ggplot(combined_hits, aes(bioremediation_category)) +
+  geom_bar() +
+  theme_bw() +
+  labs(
+    title = "Bioremediation-Related Genes",
+    x = "Category",
+    y = "Number of Genes"
+  )
+
+
+### ---- 6. OPTIONAL: print summary counts ----
+
+print(table(combined_hits$bioremediation_category))
+
+### ---- DONE ----
+
+
+
+Sakabanensis <- read_excel('Sungouiella/eggnog/out.emapper.annotations.xlsx')
+#set column names
+colnames(Sakabanensis) <- as.character(Sakabanensis[2,])
+#remove empty rows
+Sakabanensis <- Sakabanensis[-c(1,2),]
+
+table(Sakabanensis$COG_category)
+
+
+# Compute counts
+counts <- as.data.frame(table(Sakabanensis$COG_category))
+
+# Write CSV
+write.csv(counts, file = 'myNAMEHERECOGs.csv', row.names = FALSE)
 
 
