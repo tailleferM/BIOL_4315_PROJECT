@@ -13,7 +13,7 @@ library(ggplot2)
 # read eggnogdbmapper table
 
 #Wanomalus <- read_excel('Wickerhamomyces/funannotate/output/eggnog_results/MM_jpced9_r.emapper.annotations.xlsx')
-Sakabanensis <- read_excel('Sungouiella/eggnog/out.emapper.annotations.xlsx')
+Sakabanensis <- read_excel('data/out.emapper.annotations.xlsx')
 #set column names
 colnames(Sakabanensis) <- as.character(Sakabanensis[2,])
 #remove empty rows
@@ -167,7 +167,7 @@ print(table(combined_hits$bioremediation_category))
 
 
 
-Sakabanensis <- read_excel('Sungouiella/eggnog/out.emapper.annotations.xlsx')
+Sakabanensis <- read_excel('data/out.emapper.annotations.xlsx')
 #set column names
 colnames(Sakabanensis) <- as.character(Sakabanensis[2,])
 #remove empty rows
@@ -180,6 +180,160 @@ table(Sakabanensis$COG_category)
 counts <- as.data.frame(table(Sakabanensis$COG_category))
 
 # Write CSV
-write.csv(counts, file = 'myNAMEHERECOGs.csv', row.names = FALSE)
+write.csv(counts, file = 'DebaryomycesHansenii.csv', row.names = FALSE)
+
+######### READING EVERYONE'S COG CATEGORY COUNTS ################
+
+# Set your folder path
+folder <- "data/everyoneCOGs"
+
+# List CSV files
+files <- list.files(folder, pattern = "\\.csv$", full.names = TRUE)
+
+# Read all files into named lists
+data_list <- lapply(files, function(file) {
+  df <- read.csv(file, header = TRUE, stringsAsFactors = FALSE)
+  # named vector: variable = value
+  setNames(df[[2]], df[[1]])
+})
+
+# Row names = file base names
+names(data_list) <- tools::file_path_sans_ext(basename(files))
+
+# ---- Determine full set of variables across all files ----
+all_vars <- unique(unlist(lapply(data_list, names)))
+
+# ---- Build a clean dataframe with matching columns ----
+final_df <- data.frame(matrix(NA, nrow = length(data_list), ncol = length(all_vars)),
+                       stringsAsFactors = FALSE)
+colnames(final_df) <- all_vars
+rownames(final_df) <- names(data_list)
+
+# Fill each row with the variable values for that file
+for (i in seq_along(data_list)) {
+  vec <- data_list[[i]]
+  final_df[i, names(vec)] <- vec
+}
+
+#replace NA with 0
+final_df[is.na(final_df)] <- 0
+
+#give first column a name
+
+colnames(final_df)[1] <- 'None'
+
+# View result
+final_df
+
+# add a sum row
+sum_row <- colSums(final_df)
+
+COGsums <- rbind(final_df, Sum = sum_row) 
 
 
+### splitting multi cog categories. ###
+
+# df is your original dataframe
+
+df <- COGsums
+# Identify single-letter columns
+single_cols <- grep("^[a-zA-Z]$", names(df), value = TRUE)
+
+# Remove "None" if it's in the list (just in case)
+single_cols <- setdiff(single_cols, "None")
+
+# Identify multi-letter columns
+multi_cols  <- grep("^[a-zA-Z]{2,}$", names(df), value = TRUE)
+
+# Remove "None" from multi-letter list (in case it appears)
+multi_cols <- setdiff(multi_cols, "None")
+
+# Create output dataframe with single-letter columns only
+df_out <- df[single_cols]
+
+# For each multi-letter column, distribute values to corresponding letters
+for (mc in multi_cols) {
+  
+  letters_in_col <- strsplit(mc, "")[[1]]
+  
+  # keep only letters that exist as single-letter columns
+  letters_in_col <- letters_in_col[letters_in_col %in% single_cols]
+  
+  # add values
+  for (ltr in letters_in_col) {
+    df_out[[ltr]] <- df_out[[ltr]] + df[[mc]]
+  }
+}
+
+df_out
+
+#renaming categories
+
+names(df_out) <- dict[names(df_out)]
+
+df_out$None <- COGsums$None
+
+
+new_df <- df_out[, !(names(df_out) %in% "Function unknown")]
+df3 <- new_df[, !(names(new_df) %in% "None")]
+
+
+#### plotting results ####
+
+# Extract the Sum row as a named numeric vector
+sum_vec <- df3["Sum", ]
+
+# Convert to a dataframe suitable for ggplot
+plot_df <- data.frame(
+  variable = names(sum_vec),
+  value = as.numeric(sum_vec)
+)
+
+fermentation_related <- c(
+  "Energy production and conversion",
+  "Carbohydrate transport and metabolism",
+  "Amino acid transport and metabolism",
+  "Coenzyme transport and metabolism"
+)
+
+resistance_related <- c(
+  "Defense mechanisms",
+  "Cell wall/membrane/envelope biogenesis",
+  "Inorganic ion transport and metabolism",
+  "Secondary metabolites biosynthesis, transport and catabolism"
+)
+
+both_related <- c(
+  "Lipid transport and metabolism",
+  "Signal transduction mechanisms",
+  "Posttranslational modification, protein turnover, chaperones"
+)
+
+plot_df$category <- case_when(
+  plot_df$variable %in% fermentation_related ~ "Fermentation",
+  plot_df$variable %in% resistance_related ~ "Resistance",
+  plot_df$variable %in% both_related ~ "Both",
+  TRUE ~ "Other"
+)
+
+plot_df$variable <- factor(
+  plot_df$variable,
+  levels = plot_df$variable[order(plot_df$value)]
+)
+
+ggplot(plot_df, aes(x = variable, y = value, fill = category)) +
+  geom_bar(stat = "identity") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_manual(values = c(
+    "Fermentation" = "#1b9e77",
+    "Resistance" = "#d95f02",
+    "Both" = "#7570b3",
+    "Other" = "grey70"
+  )) +
+  labs(
+    title = "Sum of Annotated Genes",
+    x = "COG Category",
+    y = "Sum",
+    fill = "Category"
+  )
