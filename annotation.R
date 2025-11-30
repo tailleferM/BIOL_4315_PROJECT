@@ -13,12 +13,11 @@ library(ggplot2)
 # read eggnogdbmapper table
 
 #Wanomalus <- read_excel('Wickerhamomyces/funannotate/output/eggnog_results/MM_jpced9_r.emapper.annotations.xlsx')
-Sakabanensis <- read_excel('data/out.emapper.annotations.xlsx')
+Sakabanensis <- read_excel('Sungouiella/eggnog/out.emapper.annotations.xlsx')
 #set column names
 colnames(Sakabanensis) <- as.character(Sakabanensis[2,])
 #remove empty rows
 Sakabanensis <- Sakabanensis[-c(1,2),]
-
 
 COGs <- readLines('COGs.txt')
 # use a regex to extract key and value
@@ -31,27 +30,144 @@ dict <- setNames(values, keys)
 Sakabanensis <- Sakabanensis %>%
   mutate(COGs = recode(COG_category, !!!dict))
 
+
+######### GO TABLE ##########
+
 #Convert to long table
-W_long <- Sakabanensis %>%
+GoTable <- Sakabanensis %>%
   separate_rows(GOs, sep = ",")
 
 #Get the terms and the ontology
 
-W_long$TERM <- AnnotationDbi::select(GO.db,
-                                      keys = W_long$GOs,
+GoTable$TERM <- AnnotationDbi::select(GO.db,
+                                      keys = GoTable$GOs,
                                       columns = c("TERM"),
                                       keytype = "GOID")$TERM
 
-W_long$ONTOLOGY <- AnnotationDbi::select(GO.db,
-                                          keys = W_long$GOs,
+GoTable$ONTOLOGY <- AnnotationDbi::select(GO.db,
+                                          keys = GoTable$GOs,
                                           columns = c("ONTOLOGY"),
                                           keytype = "GOID")$ONTOLOGY
 
-W_long$DEFINITION <- AnnotationDbi::select(GO.db,
-                                            keys = W_long$GOs,
+GoTable$DEFINITION <- AnnotationDbi::select(GO.db,
+                                            keys = GoTable$GOs,
                                             columns = c("DEFINITION"),
                                             keytype = "GOID")$DEFINITION
 
+####### KEGG TABLE ##########
+library(KEGGREST)
+library(dplyr)
+library(stringr)
+library(purrr)
+library(tidyr)
+
+#-------------------------------------------------------
+# 0. Helper: split comma-separated KEGG ID fields
+#-------------------------------------------------------
+split_ids <- function(x) {
+  if (is.na(x) || x == "" || x == "-") return(character(0))
+  unlist(strsplit(x, ","))
+}
+
+#-------------------------------------------------------
+# 1. Download all KEGG dictionaries in one shot (FAST)
+#-------------------------------------------------------
+
+message("Downloading KEGG dictionaries...")
+
+ko_dict <- keggList("ko")
+pathway_dict <- keggList("pathway")
+module_dict <- keggList("module")
+reaction_dict <- keggList("reaction")
+rclass_dict <- keggList("rclass")
+brite_dict <- keggList("brite")
+
+# Clean dictionaries → each becomes a named vector
+clean_dict <- function(x, prefix_pattern = NULL) {
+  keys <- names(x)
+  vals <- as.character(x)
+  if (!is.null(prefix_pattern)) {
+    keys <- gsub(prefix_pattern, "", keys)
+  }
+  setNames(vals, keys)
+}
+
+Sakabanensis$KEGG_ko <- gsub("^ko:", "", Sakabanensis$KEGG_ko)
+
+ko_dict      <- clean_dict(ko_dict,      prefix_pattern = "^ko:")
+pathway_dict <- clean_dict(pathway_dict, prefix_pattern = "^(path:|ko:|map:)")
+module_dict  <- clean_dict(module_dict)
+reaction_dict <- clean_dict(reaction_dict)
+rclass_dict   <- clean_dict(rclass_dict)
+brite_dict    <- clean_dict(brite_dict)
+
+#-------------------------------------------------------
+# 2. Vectorized lookup (SUPER FAST)
+#-------------------------------------------------------
+lookup_many <- function(vec, dict) {
+  if (length(vec) == 0) return(NA)
+  matches <- dict[vec]
+  matches <- matches[!is.na(matches)]
+  if (length(matches) == 0) return(NA)
+  paste(matches, collapse = "; ")
+}
+
+#-------------------------------------------------------
+# 3. Apply lookup to your dataframe
+#-------------------------------------------------------
+message("Annotating your data...")
+
+annotated <- Sakabanensis %>%
+  mutate(
+    KO_name = map_chr(KEGG_ko,      ~ lookup_many(split_ids(.x), ko_dict)),
+    Pathway_name = map_chr(KEGG_Pathway, ~ lookup_many(split_ids(.x), pathway_dict)),
+    Module_name = map_chr(KEGG_Module,   ~ lookup_many(split_ids(.x), module_dict)),
+    Reaction_name = map_chr(KEGG_Reaction, ~ lookup_many(split_ids(.x), reaction_dict)),
+    Rclass_name = map_chr(KEGG_rclass, ~ lookup_many(split_ids(.x), rclass_dict)),
+    BRITE_name = map_chr(BRITE, ~ lookup_many(split_ids(.x), brite_dict))
+  )
+
+message("Done! 🚀 KEGG annotation completed.")
+
+#-------------------------------------------------------
+# 4. Preview output
+#-------------------------------------------------------
+head(annotated)
+
+############### STUFF TO PARSE FOR ##############
+
+# enzymes for bioremediation
+# breaking down organic compounds
+# according to:     Laccase: A potential biocatalyst for pollutant degradation 
+# Peroxidases-ligninolytic peroxidases, laccase, lignin peroxidase, manganese peroxidase horseradish peroxidase (HRP), tyrosinases, esterases, nitrilases, aminohydrolases, lipase, cutinase, and organophosphorus hydrolase, dehalogenases, cytochrome p450 monooxygenase, multicopper oxidase, ascorbate oxidase, 
+
+# xenobiotic metabolism enzymes
+# according to: recent advances in fungal xenobiotic metabolism: enzymes and applications
+# CYPs, peroxidases, laccases, tyrosinases and unspecific peroxygenase, 
+
+#UPOs unspecific peroxidases : Identification and Expression of New Unspecific Peroxygenases – Recent Advances, Challenges and Opportunities
+
+# metal boremediation stuff: Designing yeast as plant-like hyperaccumulators for heavy metals
+#transporters can be divalent metal transporters, permeases, exporters, or have auxiliary metal transport fxn
+# metal transporters: ZRT1, ZRT2, CTR1, CTR3, FTR1, FET4, SMF1, SMF2. 
+# phosphate transporters can transport arsenate: PHOs 84, 87, 89 
+# sulfate transporters can transport chromate: SUL2
+# vacuole transporters: CCC1, COT1, ZRC1, SMF3
+# Yeast optimizes metal utilization based on metabolic network and enzyme kinetics
+# iron-sulfur cluster (ISC) synthesis reactions
+
+
+# GO terms for metal resistance according to Evolution of cross-tolerance to metals in yeast
+#“fungal-type vacuole membrane,” “incipient cellular bud site,” and “vacuolar transporter chaperone complex” among cellular components; 
+#“response to stimulus,” “biological regulation,” “cytokinetic process,” and “polyphosphate biosynthetic process” among biological processes; 
+#“phosphotransferase activity,” “ubiquitin-protein transferase activity,” and “MAP-kinase scaffold activity” among molecular functions.
+# read paper for association between over-representation of thing and tolerance of stuff
+# vacuole transporter chaperone genes: VTCs
+
+# GO terms for metal resistance: chemical-genomic profiling identifies gene that protect yeast from aluminium, gallium and indium toxicity
+# read this paper for more GOs 
+
+##### PLOTTING COGS n Stuff #########
 
 filtered <- Sakabanensis %>% filter(nchar(COGs) > 4)
 metal_related <- c(
@@ -164,176 +280,3 @@ ggplot(combined_hits, aes(bioremediation_category)) +
 print(table(combined_hits$bioremediation_category))
 
 ### ---- DONE ----
-
-
-
-Sakabanensis <- read_excel('data/out.emapper.annotations.xlsx')
-#set column names
-colnames(Sakabanensis) <- as.character(Sakabanensis[2,])
-#remove empty rows
-Sakabanensis <- Sakabanensis[-c(1,2),]
-
-table(Sakabanensis$COG_category)
-
-
-# Compute counts
-counts <- as.data.frame(table(Sakabanensis$COG_category))
-
-# Write CSV
-write.csv(counts, file = 'DebaryomycesHansenii.csv', row.names = FALSE)
-
-######### READING EVERYONE'S COG CATEGORY COUNTS ################
-
-# Set your folder path
-folder <- "data/everyoneCOGs"
-
-# List CSV files
-files <- list.files(folder, pattern = "\\.csv$", full.names = TRUE)
-
-# Read all files into named lists
-data_list <- lapply(files, function(file) {
-  df <- read.csv(file, header = TRUE, stringsAsFactors = FALSE)
-  # named vector: variable = value
-  setNames(df[[2]], df[[1]])
-})
-
-# Row names = file base names
-names(data_list) <- tools::file_path_sans_ext(basename(files))
-
-# ---- Determine full set of variables across all files ----
-all_vars <- unique(unlist(lapply(data_list, names)))
-
-# ---- Build a clean dataframe with matching columns ----
-final_df <- data.frame(matrix(NA, nrow = length(data_list), ncol = length(all_vars)),
-                       stringsAsFactors = FALSE)
-colnames(final_df) <- all_vars
-rownames(final_df) <- names(data_list)
-
-# Fill each row with the variable values for that file
-for (i in seq_along(data_list)) {
-  vec <- data_list[[i]]
-  final_df[i, names(vec)] <- vec
-}
-
-#replace NA with 0
-final_df[is.na(final_df)] <- 0
-
-#give first column a name
-
-colnames(final_df)[1] <- 'None'
-
-# View result
-final_df
-
-# add a sum row
-sum_row <- colSums(final_df)
-
-COGsums <- rbind(final_df, Sum = sum_row) 
-
-
-### splitting multi cog categories. ###
-
-# df is your original dataframe
-
-df <- COGsums
-# Identify single-letter columns
-single_cols <- grep("^[a-zA-Z]$", names(df), value = TRUE)
-
-# Remove "None" if it's in the list (just in case)
-single_cols <- setdiff(single_cols, "None")
-
-# Identify multi-letter columns
-multi_cols  <- grep("^[a-zA-Z]{2,}$", names(df), value = TRUE)
-
-# Remove "None" from multi-letter list (in case it appears)
-multi_cols <- setdiff(multi_cols, "None")
-
-# Create output dataframe with single-letter columns only
-df_out <- df[single_cols]
-
-# For each multi-letter column, distribute values to corresponding letters
-for (mc in multi_cols) {
-  
-  letters_in_col <- strsplit(mc, "")[[1]]
-  
-  # keep only letters that exist as single-letter columns
-  letters_in_col <- letters_in_col[letters_in_col %in% single_cols]
-  
-  # add values
-  for (ltr in letters_in_col) {
-    df_out[[ltr]] <- df_out[[ltr]] + df[[mc]]
-  }
-}
-
-df_out
-
-#renaming categories
-
-names(df_out) <- dict[names(df_out)]
-
-df_out$None <- COGsums$None
-
-
-new_df <- df_out[, !(names(df_out) %in% "Function unknown")]
-df3 <- new_df[, !(names(new_df) %in% "None")]
-
-
-#### plotting results ####
-
-# Extract the Sum row as a named numeric vector
-sum_vec <- df3["Sum", ]
-
-# Convert to a dataframe suitable for ggplot
-plot_df <- data.frame(
-  variable = names(sum_vec),
-  value = as.numeric(sum_vec)
-)
-
-fermentation_related <- c(
-  "Energy production and conversion",
-  "Carbohydrate transport and metabolism",
-  "Amino acid transport and metabolism",
-  "Coenzyme transport and metabolism"
-)
-
-resistance_related <- c(
-  "Defense mechanisms",
-  "Cell wall/membrane/envelope biogenesis",
-  "Inorganic ion transport and metabolism",
-  "Secondary metabolites biosynthesis, transport and catabolism"
-)
-
-both_related <- c(
-  "Lipid transport and metabolism",
-  "Signal transduction mechanisms",
-  "Posttranslational modification, protein turnover, chaperones"
-)
-
-plot_df$category <- case_when(
-  plot_df$variable %in% fermentation_related ~ "Fermentation",
-  plot_df$variable %in% resistance_related ~ "Resistance",
-  plot_df$variable %in% both_related ~ "Both",
-  TRUE ~ "Other"
-)
-
-plot_df$variable <- factor(
-  plot_df$variable,
-  levels = plot_df$variable[order(plot_df$value)]
-)
-
-ggplot(plot_df, aes(x = variable, y = value, fill = category)) +
-  geom_bar(stat = "identity") +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_fill_manual(values = c(
-    "Fermentation" = "#1b9e77",
-    "Resistance" = "#d95f02",
-    "Both" = "#7570b3",
-    "Other" = "grey70"
-  )) +
-  labs(
-    title = "Sum of Annotated Genes",
-    x = "COG Category",
-    y = "Sum",
-    fill = "Category"
-  )
