@@ -9,11 +9,13 @@ library(stringr)
 library(readxl)
 library(tidyr)
 library(ggplot2)
-
+library(reshape2)
+library(scales)
+library(knitr)
 # read eggnogdbmapper table
 
-#Wanomalus <- read_excel('Wickerhamomyces/funannotate/output/eggnog_results/MM_jpced9_r.emapper.annotations.xlsx')
-Sakabanensis <- read_excel('Sungouiella/eggnog/out.emapper.annotations.xlsx')
+Wanomalus <- read_excel('data/MM_jpced9_r.emapper.annotations.xlsx')
+Sakabanensis <- read_excel('data/out.emapper.annotations.xlsx')
 #set column names
 colnames(Sakabanensis) <- as.character(Sakabanensis[2,])
 #remove empty rows
@@ -29,7 +31,6 @@ dict <- setNames(values, keys)
 
 Sakabanensis <- Sakabanensis %>%
   mutate(COGs = recode(COG_category, !!!dict))
-
 
 ######### GO TABLE ##########
 
@@ -117,7 +118,7 @@ lookup_many <- function(vec, dict) {
 #-------------------------------------------------------
 message("Annotating your data...")
 
-annotated <- Sakabanensis %>%
+KeggTableW <- Wanomalus %>%
   mutate(
     KO_name = map_chr(KEGG_ko,      ~ lookup_many(split_ids(.x), ko_dict)),
     Pathway_name = map_chr(KEGG_Pathway, ~ lookup_many(split_ids(.x), pathway_dict)),
@@ -280,3 +281,18 @@ ggplot(combined_hits, aes(bioremediation_category)) +
 print(table(combined_hits$bioremediation_category))
 
 ### ---- DONE ----
+
+alcohol <- data.frame(
+  strain = c('W. anomalus', 'S. akabanensis'),
+  adh = c(9, 5),
+  cyp = c(1,9),
+  multicopper = c(6,2),
+  
+  
+)
+
+ggplot(alcohol, aes(y = adh, x = strain)) +
+  geom_bar(stat = "identity", fill = "skyblue") + 
+  labs(title = "Number of Alcohol Dehydrogenase Copies", x = "Yeast Strain", y = "ADH copies") +
+  scale_y_continuous(breaks = pretty_breaks())
+       
