@@ -1,0 +1,492 @@
+---
+title: "Genomics Project Fall 2025"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+date: "2025-12-08"
+author: 'Myles Taillefer 100315385'
+bibliography: citations.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**Abstract**
+
+Yeasts are a diverse group of fungi with many applications in a wide variety of industries. The applications of a given species are determined by what genes and pathways they carry in their genomes. Modern sequencing technology and genomic techniques allows us to peer into the genome of a species and prospect for potential uses. The cost of sequencing and computing has decreased dramatically in recent years, allowing the expansion of genomics research into the coursework of college students at even the undergraduate level. In this project we present the assembled and annotated genomes of two wild yeast isolates, Wickerhamomyces anomalus and Sungouiella akabanensis, along with a complete pipeline for yeast genome annotation from initial read quality control to analysis of annotation results. One of these isolates, S. akabanensis, is a previously ungenotyped species, and therefore this assembly could serve as the basis for further research. We examined the genomes of these yeasts for traits indicating possible bioremediation applications, and found a high number of cytochrome P450s, metal ion transporters and phosphate transporters present in S. akabanensis. This indicates that S. akabanensis is promising for bioremediation applications and arsenic X warrants additional investigation.
+
+**Keywords**: Genomics, Wickerhamomyces anomalus, Sungouiella akabanensis, yeast, bioremediation, xenobiotics 
+
+**Background**
+
+Genomics is a field of biology that seeks to study and explore the entire genetic material of an organism. A field with applications as diverse as ecological surveys and industrial applications, it forms the foundation of much of current biological research. It can allow us to answer the question of what microbes are living in a given environment,  without the drawbacks of needing to culture a sample [@adams_beyond_2019]. Genomics provides the methods to classify organisms to a greater precision than was ever possible with simple morphological or even gene based trees [@telford_phylogenomic_2015]. It gives us the tools to explore understudied organisms and examine their metabolisms and even discover novel uses for them. One such domain of underexplored organisms is fungi [@cunningham_fungi_2024].
+
+While the questions that genomics can answer are varied, the general workflow is conserved. DNA is extracted from an organism and processed [@vereecke_open_source_2025]. It is fed to a sequencing machine to generate reads, contiguous subsequences of the greater genome [@vereecke_open_source_2025]. Sequencing platforms fall into two main strategies; short read and long read sequencing [@satam_next_generation_2023]. Today Illumina (short read) competes with Oxford Nanopore Technologies and Pacific Biosciences (long read) for their place in the sequencing market [@satam_next_generation_2023]. These high-throughput platforms produce huge amounts of data for a fraction of the cost and time as was required 25 years ago [@lee_principles_2023]. It is this increase in throughput and drop in price that has allowed the integration of genomics into even undergraduate coursework. Modern devices allow for ‘multiplexing’, that is the sequencing of multiple samples simultaneously. Once sequencing is complete, the DNA from different samples must be separated, a process known as demultiplexing [@satam_next_generation_2023]. Next, quality control must be performed. Typical metrics by which the run is evaluated include the length distribution of the reads and quality scores. Unwanted reads are rejected, and for short reads often the lower quality back end of the read is trimmed. Since the chemistry of long read sequencing is different, low quality bases are not skewed towards the back end of reads and trimming is not typically performed [@satam_next_generation_2023]. After the quality of the data is deemed acceptable, the reads are arranged by a program known as an assembler into a genome assembly. Assemblers work either with the use of a reference genome, or ‘de novo’, building the genome from scratch [@moreton_assembly_2016]. The assembly must then be evaluated. Common metrics of evaluation include the N50 score (the length of the shortest contig among the longest contigs accounting for 50% of the data), the length of the assembly compared to its expected size, the contiguity and the completeness of the assembly [@wang_proposed_2023]. 
+
+To gain meaningful insight into the genome, the assembly must be annotated. Annotation is the assignment of function to regions of the genome [@ejigu_review_2020]. The locations of genes are predicted based on their sequence and their functions are predicted by aligning them against large datasets of known coding sequences [@ejigu_review_2020]. Though this allows us to predict what proteins an organism produces, further testing must be performed to confirm the results. This testing often takes the form of transcriptomics, the study of the summation of mRNA transcripts in an organism [@lowe_transcriptomics_2017]. By aligning the transcriptome against the genome, we can determine which genes are being transcribed and increase our confidence in the annotation [@lowe_transcriptomics_2017].
+
+Yeasts are a group of primarily single-celled fungi that have a long history with humanity. The metabolic abilities of yeast have been exploited by humans for the leavening of bread and fermentation of alcohol for thousands of years [@tullio_yeast_2022]. In recent years other applications have been explored such as biofuel and protein production, and in bioremediation. Bioremediation is the use of microorganisms to clean and detoxify waste products. Yeasts are good candidates for bioremediation applications as they have diverse metabolisms and are able to metabolize a wide variety of natural and xenobiotic compounds [@mohiuddin_bioremediation_2024]. Yeasts also exhibit biosorption abilities and are capable of absorbing and concentrating heavy metals [@xiao_adsorption_2025]. 
+
+The xenobiotic enzymes of fungi can be harnessed to process many waste products. Yeasts biodegrade pesticides using cytochrome P450s (CYP) and laccases [@bautistaguerrero_isolation_2022:@agrawal_fungal_2018:@pritsch_two_way_2024]. Cytochrome P450s are a very diverse group of haem-containing monooxygenases that catalyze a wide variety of reactions [@ide_molecular_2012]. Laccases are multicopper oxidases with broad substrate specificity produced to degrade lignin [@agrawal_fungal_2018]. They are most commonly found in rot fungi, but are also found in yeast [@bautistaguerrero_isolation_2022]. They have been shown halogenated pollutants such as polyfluorinated alkyl substances (PFAS) and polychlorinated biphenyls (PCBs) [@khan_recent_2023]. CYPs and laccases, along with tyrosinases have also been should to degrade dyes [@khan_recent_2023]. Polyaromatic hydrocarbons created in the burning of wood and fossil fuels can be degraded by peroxidases such as manganese peroxidase and lignin perodixase, as well as CYPs [@khan_recent_2023]. 
+
+Another aspect of bioremediation is the biosorption and accumulation of heavy metals. This process is well documented in plants, yet yeasts offer many advantages over plants. Plants require more upkeep and are more limited in growing conditions [@sun_designing_2019]. In yeasts the absorption of heavy metals relies heavily on metal ion transporters such as those for iron, copper and zinc [@sun_designing_2019]. The uptake of chromium and arsenic relies on sulfate and phosphate transporters. This is due to the molecular similarity of phosphate and arsenate, and of sulfate and chromate.   [@pereira_chromate_2008:@catarecha_mutant_2007]. After the metal is absorbed, yeasts rely on chelators such as glutathione and the metallothionein CUP1 to limit toxicity [@hall_cellular_2002]. Cytochrome P450s have also been shown to contribute to the bioaccumulation of heavy metals [@chen_removal_2022].
+
+Sungouiella akabanensis is a yeast for which there is little published research. As of the writing of this paper, there is no published genome assembly for this strain. A 2020 study found that the species, then known as Candida akabanensis, showed strong antifungal drug resistance [@liu_phylogenomic_2024:@lillian_phylogenetic_2022]. The species is also capable of fermenting xylose to alcohol [@valinhas_xylose_2018]. The multidrug resistance capabilities of S. akabanensis could indicate that the yeast is suitable for detoxification purposes. The multidrug resistance ERG11 gene that was found by Lillian et al. is a cytochrome P450. It is likely that the strain has more xenobiotic metabolism genes that could be useful in bioremediation. As the metal absorption qualities of this strain are unstudied, an investigation into its metal uptake and resistance genes would be enlightening. 
+
+Wickerhamomyces anomalus is a yeast that has undergone much phylogenetic reshuffling, having been known as Hansenula anomala, Pichia anomala, and Candida pelliculosa [@ioannou_fungemia_2024]. It is best known for its use in winemaking as a biocontrol yeast, impeding mold growth [@kuchen_evaluation_2023]. Its ability to detoxify mycotoxin [@ben_taheur_review_2019] could indicate that it has the potential for bioremediation applications. A deeper look into the xenobiotic metabolism of W. anomalus will elucidate the extent of this potential. Wickerhamomyces anomalus is also noted for its high osmotolerance [@zhang_isolation_2023], heat and cold tolerance [@fredlund_physiological_2002] and tolerance for highly acidic environments [@fletcher_rna_seq_2015]. Given this ability to survive a myriad of stressors, this strain may exhibit heavy metal tolerances as well. The combination of resistances make this yeast a good candidate for studies in bioremediation applications. 
+
+In this project we will assemble and annotate the genomes of two wild yeast isolates, Wickerhamomyces anomalus and Sungouiella akabanensis. We will check whether they exhibit genes suitable for bioremediation applications, such as waste management and pollutant detoxification. We will examine their genomes for genes involved in xenobiotic metabolism and the uptake of heavy metals. Should these genes be present, these yeasts would be suitable candidates for further study to quantify their bioremediation capabilities. 
+
+**Methods**
+
+
+**Initial QC**
+
+Genomic DNA samples from wild isolates of W. anomalus and S. akabanensis were sequenced with a Nanopore X, resulting in 402 mb and 490 mb of long read data respectively. Initial inspection of the data was performed using Sequali in a conda environment [@vorderman_sequali_2024]. After inspection, the data was filtered based on length using the preprocessedReads function from the bioconductor package QuasR, with the argument ‘minlength = 100’ for W. hamomyces and ‘minlength = 140’ for S. akabanensis [@gaidatzis_quasr_2015]. Minimum length was selected based on the length distributions observed with Sequali. 
+
+**Assembly**
+
+The filtered reads were then assembled using Flye in a conda environment [@kolmogorov_assembly_2019]. The argument ‘--nano-hq’ for high quality reads was used, as well as the argument ‘--genome-size 14m’. 14 Mb was selected as this is the length of the reference genome for W. anomalus [@riley_comparative_2016]. As no reference genome for S. akabanensis exists, other species of the genus including Sungouiella thailandica, Sungouiella blattae and Sungouiella intermedia were consulted [@liu_phylogenomic_2024:@opulente_genomic_2023:@shen_tempo_2018]. Since a range of 10 to 16 Mb was observed the same value of 14 Mb was chosen . 
+
+**Evaluation**
+
+Initial evaluation of the assembled genomes was performed using BUSCO  through docker [@BUSCO], with the arguments ‘-l saccharomycetaceae_odb12 -m genome -c 8’. The saccharomycetaceae lineage was chosen as this was the closest relative of the yeasts found in the busco dataset. The genome mode was selected as the data is genomic, and 8 cores were specified as per the computer used. Further evaluation of the W. anomalus assembly was performed using QUAST through Docker with the arguments ‘ --fungus -r GCF_001661255.1_Wican1_genomic.fna  -g GCF_001661255.1_Wican1_genomic.gff’. The reference sequences and annotation file were obtained through NCBI RefSeq from the assembly ‘Wican1’ [@riley_comparative_2016]. No QUAST was performed on the S. akabanensis assembly as no reference genome exists. 
+
+**Gene prediction and annotation**
+
+Gene prediction and annotation was performed with funannotate through docker (tag latest, updated July 2025) [@palmer_funannotate_2020:@docker] and the eggNOG-mapper v2 online tool [@cantalapiedra_eggnog-mapper_2021;@huerta-cepas_eggnog_2019]. First the assemblies were repeat masked using funannotate mask with default arguments. Next, genes were predicted using funannotate predict with default arguments. The output predicted proteins fasta file was then submitted to eggNOG-mapper for annotation. EggNOG-mapper annotation files in xlsx format were obtained and passed for analysis. 
+
+**Analysis**
+
+Annotation tables from eggNOG-mapper were read into R using the read_excel function from the package readxl 1.4.5 [@readxl]. Using the R packages Go.db 3.22.0 and AnnotationDbi 1.72.0 [@godb;@annotation], gene ontology numbers were mapped to their associated terms and ontology categories for ease of analysis  [@ashburner_gene_2000;@the_gene_ontology_consortium_gene_2023]. A map of COG letters to their associated category was constructed and used to transform the COG_category column of the dataset [@galperin_cog_2024]. A list of genes related to xenobiotic metabolism and metal uptake was constructed with reference to the available literature [@khan_recent_2023;@sun_designing_2019] and used to parse the dataset. Plots were generated using ggplot2 4.0.1 [@ggplot2]. 
+
+**Results / Discussion**
+
+Note that only code for the Wickerhamomyces anomalus run is shown, but the same workflow was followed for both strains. Results of both strains are discussed.
+
+**Initial QC** - Sequali
+```{bash sequali, eval=FALSE}
+conda activate sequali-env
+sequali --outdir sequali_reports/ wickerhamomycesAnomalus.fastq
+```
+
+**Filtering** - QuasR
+```{r QuasR, eval=FALSE}
+library(QuasR)
+outfiles <- '~/above100bp.fastq'
+preprocessReads('~/wickerhamomycesAnomalus.fastq', outfiles, minLength = 100)
+```
+
+**Assembly** - Flye
+```{bash flye, eval=FALSE}
+conda activate fly-env
+flye --nano-hq above100bp.fastq --out-dir flye/ --threads 8 --genome-size 14m
+```
+
+```{r flye-table, echo=FALSE}
+library(knitr)
+
+flye_tbl <- data.frame(
+  Metric = c(
+    "Total length",
+    "Fragments",
+    "Fragments N50",
+    "Largest fragment",
+    "Scaffolds",
+    "Mean coverage"
+  ),
+  S_akabanensis = c(
+    1206445,
+    90,
+    363453,
+    815303,
+    0,
+    18
+  ),
+  W_anomalus = c(
+    13205329,
+    2025,
+    9214,
+    53218,
+    0,
+    13
+  )
+)
+
+kable(
+  flye_tbl,
+  caption = "Table 1. FLYE assembly statistics",
+  align = c("l", "r", "r")
+)
+```
+
+The S. akabanensis assembly shows good N50 and relatively low fragment count. The W. anomalus assembly is weaker but still acceptable. The coverage for both assemblies is less than the ideal of at least 30X [@li_guide_2018]. This is to be expected given the small size of the dataset. The length of the W. anomalus assembly is comparable to the 14.1 Mb reference genome assembly WICAN1 [@riley_comparative_2016]. There exists no reference genome with which to compare the S. akabanensis assembly.
+
+**Assembly evaluation** - BUSCO
+```{bash BUSCO, eval=FALSE}
+docker run --rm \
+-v "$PWD":/data \
+-w /data \
+ezlabgva/busco:v6.0.0_cv1 \
+busco -i flye/assembly.fasta -o busco_output -l saccharomycetaceae_odb12 -m genome -c 8
+```
+
+```{r busco-table, echo=FALSE}
+library(knitr)
+
+busco_tbl <- data.frame(
+  Metric = c(
+    "Complete BUSCOs (C)",
+    "Complete and single-copy (S)",
+    "Complete and duplicated (D)",
+    "Fragmented BUSCOs (F)",
+    "Missing BUSCOs (M)",
+    "Total BUSCO groups searched"
+  ),
+  W_anomalus = c(
+    "1,634 (49.8%)",
+    "1,610 (49.1%)",
+    "24 (0.7%)",
+    "88 (2.7%)",
+    "1,560 (47.5%)",
+    "3,282"
+  ),
+  S_akabanensis = c(
+    "1,424 (43.4%)",
+    "1,408 (42.9%)",
+    "16 (0.5%)",
+    "53 (1.6%)",
+    "1,805 (55.0%)",
+    "3,282"
+  )
+)
+
+kable(
+  busco_tbl,
+  caption = "Table 2. BUSCO results",
+  align = c("l", "r", "r")
+)
+```
+
+The complete BUSCOs are much lower than desired, but this may not reflect the true quality of the assembly. Yeasts have high intra and inter-species diversity [@loegler_genotype_2025], and this diversity might not be captured in the BUSCO dataset. On the other hand, the low completeness may be simply due to insufficient data leading to a poor assembly.
+
+**Assembly evaluation** - QUAST
+```{bash QUAST, eval=FALSE}
+docker run --rm -v "$(pwd)":/data -w /data quay.io/biocontainers/quast:5.3.0--py313pl5321h5ca1c30_2 \
+quast.py /data/flye/assembly.fasta \
+--fungus \
+-r /data/referenceData/GCA_900106115.1_CBS_141442_assembly_genomic.fna \
+-g /data/referenceData/GCA_900106115.1_CBS_141442_assembly_genomic.gff \
+-o quast_output
+```
+
+```{r quast-table, echo=FALSE}
+library(knitr)
+
+quast_tbl <- data.frame(
+  Metric = c("Genome Fraction (%)", "# misassemblies"),
+  W_anomalus = c(76.493, 214)
+)
+
+kable(
+  quast_tbl,
+  caption = "Table 3. Selected QUAST results",
+  align = c("l", "r")
+)
+```
+
+The QUAST results show higher completeness than the BUSCO results. The high number of misassemblies could be due to the lower contiguity of the assembly. A perhaps less likely explanation is that these represent structural variants. Yeasts do exhibit high structural variance [@loegler_genotype_2025], but the lower quality of the assembly points to error as the source. Note that QUAST could not be used for S. akabanensis as no reference genome is available. 
+
+**Gene Prediction** - Funannotate predict
+```{bash funannotate mask+predict, eval=FALSE}
+docker run --rm -v "$PWD":/data -w /data --platform linux/amd64 nextgenusfs/funannotate funannotate mask -i flye/assembly.fasta -o masked_assembly.fasta  
+
+docker run --rm -v "$PWD":/data -w /data --platform linux/amd64 nextgenusfs/funannotate funannotate predict -i masked_assembly.fasta -o /data/output -s 'Wickerhamomyces anomalus'
+```
+
+**Genome Annotation** - eggNOG-mapper
+
+Note that eggNOG-mapper was run via the online tool. The following code is the job command line.
+```{bash eggnog, eval=FALSE}
+emapper.py --cpu 20 --mp_start_method forkserver --data_dir /dev/shm/ -o out --output_dir /emapper_web_jobs/emapper_jobs/user_data/MM_um3te_g6 --temp_dir /emapper_web_jobs/emapper_jobs/user_data/MM_um3te_g6 --override -m diamond --dmnd_ignore_warnings -i /emapper_web_jobs/emapper_jobs/user_data/MM_um3te_g6/queries.fasta --evalue 0.001 --score 60 --pident 40 --query_cover 20 --subject_cover 20 --itype proteins --tax_scope auto --target_orthologs all --go_evidence non-electronic --pfam_realign none --report_orthologs --decorate_gff yes --excel > /emapper_web_jobs/emapper_jobs/user_data/MM_um3te_g6/emapper.out 2> /emapper_web_jobs/emapper_jobs/user_data/MM_um3te_g6/emapper.err
+```
+
+**Analysis**  
+``` {r analysis, include = FALSE}
+library(readxl)
+
+emapper_files <- c('data/Sungouiella akabanensis.emapper.annotations.xlsx','data/Wickerhamomyces anomalus.emapper.annotations.xlsx')
+emapper_list <- list()
+
+for (file in emapper_files) {
+  
+  # Extract the base filename
+  fname <- basename(file)
+  
+  # Remove the emapper suffix
+  obj_name <- sub("\\.emapper\\.annotations\\.xlsx$", "", fname)
+  
+  # Read file
+  df <- read_xlsx(file)
+  
+  #set column names
+  colnames(df) <- as.character(df[2,])
+  
+  #remove empty rows
+  df <- df[-c(1,2),]
+  
+  # Store in list
+  emapper_list[[obj_name]] <- df
+}
+```
+
+```{r KOGdic, include=FALSE}
+library(dplyr)
+#build COG dictionary
+COGs <- readLines('COGs.txt')
+# use a regex to extract key and value
+keys <- sub("^\\[([A-Z])\\].*$", "\\1", COGs)              # extract the letter inside brackets
+values <- sub("^\\[[A-Z]\\]\\s*(.*)$", "\\1", COGs)        # extract everything after the bracket
+
+# create a named vector (acts like a dictionary)
+dict <- setNames(values, keys)
+
+# map COGs
+for (name in names(emapper_list)) {
+  emapper_list[[name]] <- emapper_list[[name]] %>%
+    mutate(
+      COGs = sapply(COG_category, function(x) {
+        letters <- strsplit(x, "")[[1]] #split multi COGs  
+        mapped  <- dict[letters]
+        paste(mapped, collapse = "; ")
+      })
+    )
+}
+```
+
+```{r KEGGmapping, include=FALSE}
+library(KEGGREST)
+library(purrr)
+
+# Helper: split comma-separated KEGG ID fields
+split_ids <- function(x) {
+  if (is.na(x) || x == "" || x == "-") return(character(0))
+  unlist(strsplit(x, ","))
+}
+
+# Download all KEGG dictionaries
+ko_dict <- keggList("ko")
+pathway_dict <- keggList("pathway")
+module_dict <- keggList("module")
+reaction_dict <- keggList("reaction")
+rclass_dict <- keggList("rclass")
+brite_dict <- keggList("brite")
+
+# Clean dictionaries → each becomes a named vector
+clean_dict <- function(x, prefix_pattern = NULL) {
+  keys <- names(x)
+  vals <- as.character(x)
+  if (!is.null(prefix_pattern)) {
+    keys <- gsub(prefix_pattern, "", keys)
+  }
+  setNames(vals, keys)
+}
+
+ko_dict      <- clean_dict(ko_dict,      prefix_pattern = "^ko:")
+pathway_dict <- clean_dict(pathway_dict, prefix_pattern = "^(path:|ko:|map:)")
+module_dict  <- clean_dict(module_dict)
+reaction_dict <- clean_dict(reaction_dict)
+rclass_dict   <- clean_dict(rclass_dict)
+brite_dict    <- clean_dict(brite_dict)
+
+# Vectorized lookup function
+lookup_many <- function(vec, dict) {
+  if (length(vec) == 0) return(NA)
+  matches <- dict[vec]
+  matches <- matches[!is.na(matches)]
+  if (length(matches) == 0) return(NA)
+  paste(matches, collapse = "; ")
+}
+
+# PART 4: Apply KEGG annotation to all dataframes
+
+for (name in names(emapper_list)) {
+  message(paste0("Processing ", name, "..."))
+  
+  emapper_list[[name]] <- emapper_list[[name]] %>%
+    # Clean KEGG_ko column (remove "ko:" prefix if present)
+    mutate(KEGG_ko = gsub("^ko:", "", KEGG_ko)) %>%
+    # Add KEGG annotations
+    mutate(
+      KO_name = map_chr(KEGG_ko,      ~ lookup_many(split_ids(.x), ko_dict)),
+      Pathway_name = map_chr(KEGG_Pathway, ~ lookup_many(split_ids(.x), pathway_dict)),
+      Module_name = map_chr(KEGG_Module,   ~ lookup_many(split_ids(.x), module_dict)),
+      Reaction_name = map_chr(KEGG_Reaction, ~ lookup_many(split_ids(.x), reaction_dict)),
+      Rclass_name = map_chr(KEGG_rclass, ~ lookup_many(split_ids(.x), rclass_dict)),
+      BRITE_name = map_chr(BRITE, ~ lookup_many(split_ids(.x), brite_dict))
+    )
+}
+```
+
+```{r GOmapping, include=FALSE}
+library(GO.db)
+library(AnnotationDbi)
+
+# Add GO descriptions column to each dataframe in emapper_list
+emapper_list <- lapply(emapper_list, function(df) {
+  # Extract all unique GO terms from the GOs column
+  # Assuming GO terms are separated by commas or semicolons
+  all_go_terms <- unique(unlist(strsplit(as.character(df$GOs), "[,;]")))
+  all_go_terms <- trimws(all_go_terms)
+  all_go_terms <- all_go_terms[all_go_terms != "" & all_go_terms != "-" & !is.na(all_go_terms)]
+  
+  # Get GO term descriptions
+  go_lookup <- AnnotationDbi::select(GO.db,
+                                     keys = all_go_terms,
+                                     columns = c("TERM"),
+                                     keytype = "GOID")
+  
+  # Create a function to map GO IDs to terms for each row
+  df$GO_descriptions <- sapply(df$GOs, function(go_string) {
+    if (is.na(go_string) || go_string == "" || go_string == "-") {
+      return(NA)
+    }
+    go_terms <- unlist(strsplit(as.character(go_string), "[,;]"))
+    go_terms <- trimws(go_terms)
+    
+    # Look up each term
+    terms <- sapply(go_terms, function(go_id) {
+      match_idx <- which(go_lookup$GOID == go_id)
+      if (length(match_idx) > 0) {
+        return(go_lookup$TERM[match_idx[1]])
+      } else {
+        return(go_id)
+      }
+    })
+    
+    paste(terms, collapse = "; ")
+  })
+  
+  return(df)
+})
+```
+
+```{r Parsing, include = FALSE}
+library(tidyverse)
+
+#combine columns into one parsable string
+searchable <- lapply(emapper_list, function(df) {
+  df <- unite(df, long, Description, Preferred_name, PFAMs, COGs, KO_name, Pathway_name, Module_name, GO_descriptions, BRITE_name, sep = " ", remove = FALSE)
+  df
+})
+
+metal_search_terms <- c(
+  "Glutathione Biosynthesis Pathway" = "glutathione biosynthesis",
+  "Zinc Transporter" = "zinc transporter",
+  "Copper Transporter" = "copper transporter",
+  "Iron Transporter" = "iron transporter",
+  "Phosphate Transporter" = "phosphate transporter",
+  "Sulfate Transporter" = "sulfate_transp",
+  "CUP1" = "CUP1",
+  "CUP2" = "CUP2"
+)
+
+metal<- as.data.frame(
+  lapply(metal_search_terms, function(term) {
+    sapply(searchable, function(df) {
+      sum(grepl(term, df$long, ignore.case = TRUE))
+    })
+  }),
+  check.names = FALSE
+)
+
+xeno_search_terms <- list(
+  list(col = "Cytochrome P450", term = "p450", field = "Description"),
+  list(col = "Manganese Peroxidase", term = "manganese peroxidase", field = "long"),
+  list(col = "Lignin Peroxidase", term = "lignin peroxidase", field = "long"),
+  list(col = "Versatile Peroxidase", term = "versatile peroxidase", field = "long"),
+  list(col = "Peroxygenase", term = "peroxygenase", field = "long"),
+  list(col = "Laccase", term = "laccase", field = "long"),
+  list(col = "Multicopper Oxidase", term = "multicopper oxidase", field = "long"),
+  list(col = "Tyrosinase", term = "tyrosinase", field = "long")
+)
+
+xeno <- as.data.frame(
+  lapply(xeno_search_terms, function(item) {
+    sapply(searchable, function(df) {
+      sum(grepl(item$term, df[[item$field]], ignore.case = TRUE))
+    })
+  }),
+  check.names = FALSE
+)
+
+colnames(xeno) <- sapply(xeno_search_terms, function(item) item$col)
+```
+
+```{r metalplotting, echo =FALSE}
+library(ggplot2)
+library(scales)
+
+metal$species <- rownames(metal)     # move rownames into a column
+
+mlong_df <- metal %>%
+  pivot_longer(
+    cols = -species,
+    names_to = "gene",
+    values_to = "count"
+  )
+
+ggplot(mlong_df, aes(x = gene, y = count, fill = species)) +
+  geom_col(position = "dodge") +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.margin = margin(t = 5, r = 20, b = 20, l = 20)  # add padding
+  ) +
+  labs(x = "Gene", y = "Count") +
+  labs(x = "Gene", y = "Count") + 
+  scale_y_continuous(breaks = breaks_pretty())
+
+```
+
+**Figure 1.** Metal uptake and resistance genes in Sungouiella akabanensis and Wickerhamomyces anomalus genome assemblies.
+
+This plot shows the gene counts for key metal biosorption and resistance genes. All of the  transporters investigated are present in multiple copies. Note the high number of phosphate transporters present in the S. akabanensis assembly. This potentially indicates strong arsenic uptake potential [@catarecha_mutant_2007]. This could be further investigated by culturing the strain on an arsenic containing substrate. While both strains exhibit many metal uptake genes, they are missing the key metal resistance gene CUP1. S. akabanensis does have a copy of CUP2, a transcription factor that activates the expression of CUP1 [@buchman_cup2_1989]. This indicates that CUP1 may be present in S. akabanensis, and that the assembly is incomplete, or perhaps that the gene was missed in either the gene prediction or annotation stages. An alignment of CUP1 genes against the assembly should be performed to check for the presence of the gene. Both strains exhibit the glutathione biosynthesis pathway and therefore should possess resistance to metal toxicity [@sun_designing_2019]. Given the presence of all queried metal transporters and certain metal resistance genes, these species warrant further research into heavy metal bioremediation.
+
+```{r xenoplotting, echo = FALSE}
+xeno$species <- rownames(xeno)     # move rownames into a column
+
+xlong_df <- xeno %>%
+  pivot_longer(
+    cols = -species,
+    names_to = "gene",
+    values_to = "count"
+  )
+
+ggplot(xlong_df, aes(x = gene, y = count, fill = species)) +
+  geom_col(position = "dodge") +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.margin = margin(t = 5, r = 20, b = 20, l = 20)  # add padding
+  ) +
+  labs(x = "Gene", y = "Count") +
+  scale_y_continuous(breaks = breaks_pretty())
+```
+
+**Figure 2.** Xenobiotic metabolism genes in Sungouiella akabanensis and Wickerhamomyces anomalus genome assemblies.
+
+This plot shows the gene counts for key xenobiotic metabolism genes. Of the genes queried, only cytochrome P450 and multi-copper oxidases were present in the genome assemblies. The absence of laccase is unsurprising, as it is primarily found in rot fungi [@bautistaguerrero_isolation_2022]. Although the missing enzymes are disappointing, the high CYP count in Sungouiella akabanensis is quite promising. Such a high number of broad substrate enzymes indicates that this strain could potentially catalyze and degrade a very wide array of compounds [@ide_molecular_2012]. Due to the diversity of CYPs it is difficult to predict exactly how this finding could be applied, so further research into the bioremediation capabilities of S. akabanensis are warranted. Assays with differential and selective media should be conducted to observe the growth of the strain in the presence of dyes, pesticides and other compounds. A transcriptomics study should also be conducted to verify the veracity of the annotation results. The higher queried gene counts observed in S. akabanensis than in W. anomalus could be explained by the higher quality (contiguity and coverage) of the S. akabanensis assembly. Resampling and generating more robust assemblies could further strengthen, or refute the findings observed in this study. 
+
+**Conclusions**
+
+In this project, we successfully assembled and annotated the genomes of two wild yeast isolates, Wickerhamomyces anomalus and Sungouiella akabanensis, using a complete workflow from read quality control to functional annotation. Despite limitations in sequencing depth, both assemblies provided meaningful biological insight, particularly regarding traits relevant to bioremediation. We identified high CYP and phosphate transporter counts, indicating that S. akabanensis has potential as a biosorbents or detoxifying agent. Additionally, the S. akabanensis assembly represents the first genomic resource available for this species, which when published will serve as a foundation for future characterization of its metabolic versatility and resistance mechanisms. Further experimental validation, such as transcriptomics or growth assays under pollutant stress, will be essential to confirm the bioremediation capacities suggested by the genomic data. 
+
+```{r sessioninfo}
+sessionInfo()
+```
+
+
+References
