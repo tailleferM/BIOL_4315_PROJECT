@@ -9,12 +9,13 @@ library(cowplot)
 library(KEGGREST)
 library(GO.db)
 library(AnnotationDbi)
+library(tidyverse)
 
 ############ READING FILES / CONSTRUCTING LIST OF DATAFRAMES ###############
 
 # get files
-emapper_files <- list.files(path = 'data/', pattern = "\\.xlsx$", full.names = TRUE)
-
+#emapper_files <- list.files(path = 'data/', pattern = "\\.xlsx$", full.names = TRUE)
+emapper_files <- c('Sungouiella/eggnog/Sungouiella akabanensis.emapper.annotations.xlsx','Wickerhamomyces/funannotate/eggnog/Wickerhamomyces anomalus.emapper.annotations.xlsx')
 emapper_list <- list()
 
 for (file in emapper_files) {
@@ -688,4 +689,231 @@ ggplot(geneCounts, aes(y = IRC7, x = strain)) +
         legend.key.size = unit(0.5, "cm"),
         legend.text = element_text(size = 9))
 
+
+######## METAL BIOSORPTION ########
+# metal boremediation stuff: Designing yeast as plant-like hyperaccumulators for heavy metals
+#transporters can be divalent metal transporters, permeases, exporters, or have auxiliary metal transport fxn
+# metal transporters: ZRT1, ZRT2, CTR1, CTR3, FTR1, FET4, SMF1, SMF2. 
+# phosphate transporters can transport arsenate: PHOs 84, 87, 89 
+# sulfate transporters can transport chromate: SUL2
+# vacuole transporters: CCC1, COT1, ZRC1, SMF3
+
+# key words - zinc transporter copper transporter iron transporter phosphate transporter (PHO) sulfate transporter (SUL)
+#metal resistance - glutathione biosynthesis, CUP1
+
+searchable <- lapply(emapper_list, function(df) {
+  df <- unite(df, long, Description, Preferred_name, PFAMs, COGs, KO_name, Pathway_name, Module_name, GO_descriptions, BRITE_name, sep = " ", remove = FALSE)
+  df
+})
+
+yeastParsing <- data.frame(
+  gsh = sapply(names(searchable), function(name) {
+    df <- searchable[[name]]
+    sum(grepl("glutathione biosynthesis", df$long, ignore.case = TRUE))
+  })
+)
+
+yeastParsing$`zinc transporter` <- sapply(names(searchable), function(name) {
+  df <- searchable[[name]]
+  sum(grepl("zinc transporter", df$long, ignore.case = TRUE))
+})
+
+yeastParsing$`copper transporter` <- sapply(names(searchable), function(name) {
+  df <- searchable[[name]]
+  sum(grepl("copper transporter", df$long, ignore.case = TRUE))
+})
+
+yeastParsing$`iron transporter` <- sapply(names(searchable), function(name) {
+  df <- searchable[[name]]
+  sum(grepl("iron transporter", df$long, ignore.case = TRUE))
+})
+
+yeastParsing$`phosphate transporter` <- sapply(names(searchable), function(name) {
+  df <- searchable[[name]]
+  sum(grepl("phosphate transporter", df$long, ignore.case = TRUE))
+})
+
+yeastParsing$`sulfate transporter` <- sapply(names(searchable), function(name) {
+  df <- searchable[[name]]
+  sum(grepl("sulfate_transp", df$long, ignore.case = TRUE))
+})
+
+yeastParsing$`CUP1` <- sapply(names(searchable), function(name) {
+  df <- searchable[[name]]
+  sum(grepl("CUP1", df$long, ignore.case = TRUE))
+})
+
+yeastParsing$`CUP2` <- sapply(names(searchable), function(name) {
+  df <- searchable[[name]]
+  sum(grepl("CUP2", df$long, ignore.case = TRUE))
+})
+
+######### XENOBIOTIC METABOLISM ###########
+
+# xenobiotic metabolism enzymes
+# according to: recent advances in fungal xenobiotic metabolism: enzymes and applications
+# CYPs, peroxidases, laccases, tyrosinases and unspecific peroxygenase, 
+
+#CYP 450s
+yeastParsing$`Cytochrome P450` <- sapply(names(searchable), function(name) {
+  df <- searchable[[name]]
+  sum(grepl("p450", df$Description, ignore.case = TRUE))
+})
+
+#peroxidases 
+yeastParsing$`manganese peroxidase` <- sapply(names(searchable), function(name) {
+  df <- searchable[[name]]
+  sum(grepl("manganese peroxidase", df$long, ignore.case = TRUE))
+})
+
+yeastParsing$`lignin peroxidase` <- sapply(names(searchable), function(name) {
+  df <- searchable[[name]]
+  sum(grepl("lignin peroxidase", df$long, ignore.case = TRUE))
+})
+
+yeastParsing$`versatile peroxidase` <- sapply(names(searchable), function(name) {
+  df <- searchable[[name]]
+  sum(grepl("versatile peroxidase", df$long, ignore.case = TRUE))
+})
+
+#Peroxygenases
+
+yeastParsing$`peroxygenase` <- sapply(names(searchable), function(name) {
+  df <- searchable[[name]]
+  sum(grepl("peroxygenase", df$long, ignore.case = TRUE))
+})
+
+#laccase 
+yeastParsing$`laccase` <- sapply(names(searchable), function(name) {
+  df <- searchable[[name]]
+  sum(grepl("laccase", df$long, ignore.case = TRUE))
+})
+
+yeastParsing$`multicopper oxidase` <- sapply(names(searchable), function(name) {
+  df <- searchable[[name]]
+  sum(grepl("multicopper oxidase", df$long, ignore.case = TRUE))
+})
+
+#tyrosinase
+yeastParsing$`tyrosinase` <- sapply(names(searchable), function(name) {
+  df <- searchable[[name]]
+  sum(grepl("tyrosinase", df$long, ignore.case = TRUE))
+})
+
+#plotting 
+metal <- yeastParsing[,c('copper transporter', 'iron transporter','CUP1', 'CUP2', 'sulfate transporter', 'phosphate transporter', 'zinc transporter', 'gsh')]
+
+metal$species <- rownames(metal)     # move rownames into a column
+
+mlong_df <- metal %>%
+  pivot_longer(
+    cols = -species,
+    names_to = "gene",
+    values_to = "count"
+  )
+
+ggplot(mlong_df, aes(x = gene, y = count, fill = species)) +
+  geom_col(position = "dodge") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Gene", y = "Count")
+
+
+xeno <- yeastParsing[,c('Cytochrome P450','laccase','lignin peroxidase','manganese peroxidase', 'multicopper oxidase', 'peroxygenase','tyrosinase','versatile peroxidase')]
+
+xeno$species <- rownames(metal)     # move rownames into a column
+
+xlong_df <- xeno %>%
+  pivot_longer(
+    cols = -species,
+    names_to = "gene",
+    values_to = "count"
+  )
+
+ggplot(xlong_df, aes(x = gene, y = count, fill = species)) +
+  geom_col(position = "dodge") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Gene", y = "Count") + 
+  scale_y_continuous(breaks = breaks_pretty())
+
+searchable <- lapply(emapper_list, function(df) {
+  unite(df, long, Description, Preferred_name, PFAMs, COGs, KO_name, 
+        Pathway_name, Module_name, GO_descriptions, BRITE_name, 
+        sep = " ", remove = FALSE)
+})
+
+metal_search_terms <- c(
+  "Glutathione Biosynthesis Pathway" = "glutathione biosynthesis",
+  "Zinc Transporter" = "zinc transporter",
+  "Copper Transporter" = "copper transporter",
+  "Iron Transporter" = "iron transporter",
+  "Phosphate Transporter" = "phosphate transporter",
+  "Sulfate Transporter" = "sulfate_transp",
+  "CUP1" = "CUP1",
+  "CUP2" = "CUP2"
+)
+
+metal<- as.data.frame(
+  lapply(search_terms, function(term) {
+    sapply(searchable, function(df) {
+      sum(grepl(term, df$long, ignore.case = TRUE))
+    })
+  }),
+  check.names = FALSE
+)
+
+metal$species <- rownames(metal)     # move rownames into a column
+
+mlong_df <- metal %>%
+  pivot_longer(
+    cols = -species,
+    names_to = "gene",
+    values_to = "count"
+  )
+
+ggplot(mlong_df, aes(x = gene, y = count, fill = species)) +
+  geom_col(position = "dodge") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Gene", y = "Count") + 
+  scale_y_continuous(breaks = breaks_pretty())
+
+xeno_search_terms <- list(
+  list(col = "Cytochrome P450", term = "p450", field = "Description"),
+  list(col = "Manganese Peroxidase", term = "manganese peroxidase", field = "long"),
+  list(col = "Lignin Peroxidase", term = "lignin peroxidase", field = "long"),
+  list(col = "Versatile Peroxidase", term = "versatile peroxidase", field = "long"),
+  list(col = "Peroxygenase", term = "peroxygenase", field = "long"),
+  list(col = "Laccase", term = "laccase", field = "long"),
+  list(col = "Multicopper Oxidase", term = "multicopper oxidase", field = "long"),
+  list(col = "Tyrosinase", term = "tyrosinase", field = "long")
+)
+
+xeno <- as.data.frame(
+  lapply(xeno_search_terms, function(item) {
+    sapply(searchable, function(df) {
+      sum(grepl(item$term, df[[item$field]], ignore.case = TRUE))
+    })
+  }),
+  check.names = FALSE
+)
+
+colnames(xeno) <- sapply(xeno_search_terms, function(item) item$col)
+
+xeno$species <- rownames(xeno)     # move rownames into a column
+
+xlong_df <- xeno %>%
+  pivot_longer(
+    cols = -species,
+    names_to = "gene",
+    values_to = "count"
+  )
+
+ggplot(xlong_df, aes(x = gene, y = count, fill = species)) +
+  geom_col(position = "dodge") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Gene", y = "Count") + 
+  scale_y_continuous(breaks = breaks_pretty())
 

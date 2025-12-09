@@ -14,8 +14,8 @@ library(scales)
 library(knitr)
 # read eggnogdbmapper table
 
-Wanomalus <- read_excel('data/MM_jpced9_r.emapper.annotations.xlsx')
-Sakabanensis <- read_excel('data/out.emapper.annotations.xlsx')
+Wanomalus <- read_excel('Wickerhamomyces/funannotate/eggnog/MM_jpced9_r.emapper.annotations.xlsx')
+Sakabanensis <- read_excel('Sungouiella/eggnog/out.emapper.annotations.xlsx')
 #set column names
 colnames(Sakabanensis) <- as.character(Sakabanensis[2,])
 #remove empty rows
@@ -118,7 +118,7 @@ lookup_many <- function(vec, dict) {
 #-------------------------------------------------------
 message("Annotating your data...")
 
-KeggTableW <- Wanomalus %>%
+KeggTableS <- Sakabanensis %>%
   mutate(
     KO_name = map_chr(KEGG_ko,      ~ lookup_many(split_ids(.x), ko_dict)),
     Pathway_name = map_chr(KEGG_Pathway, ~ lookup_many(split_ids(.x), pathway_dict)),
